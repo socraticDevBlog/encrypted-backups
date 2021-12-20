@@ -1,20 +1,50 @@
 #!/usr/bin/bash
+files=()
+seen_double=
+last_arg=
+for arg; do
+    case "$last_arg" in
+        o) output="$arg"; last_arg=; continue ;;
+        '') ;;
+    esac
 
-echo first param following encrypt.sh sets path to encrypted folder ...defaults to a directory named FILES
-echo second param sets encrypted filename ...defaults to ARCHIVE
+    case "$arg" in
+        '-'*) if [[ -n "$seen_double" ]]; then
+            files+=("$arg")
+        else
+            case "$arg" in
+                '--') seen_double=1 ;;
+                '-h'|'--help')
+                    printf >&2 'usage: %s [-o encrypted] [--] PATH...|FILES... encrypted\n' "$0"
+                    exit 1
+                ;;
+                -o|--output)
+                    last_arg=o
+                ;;
+            esac
+        fi
+        ;;
+        *) files+=("$arg") ;;
+    esac
+done
 
-# argument 1 - set path to encrypted folder (defaults to /files/)
-if [ -z ${1+x} ]; then dir_path="files"; else dir_path=$1; fi
+if (( ${#files[@]} < 2 )) && [[ -z "$output" ]]; then
+    echo "Not enough files or paths given!"
+    echo "Need at least one file or path and one destination."
+    echo "See --help"
+    exit 1
+elif (( ${#files[@]} == 0 )); then
+    files=(.)
+fi
 
-# argument 2 - set archive name (defaults to 'archive')
-if [ -z ${2+x} ]; then archive="archive"; else archive=$2; fi
+printf '%s\n' "${files[@]}"
 
-# compress given directory to a custom named archive
-archive_filename=${archive}-$(date +"%Y-%m-%d").tar.gz
-tar -zcvf ${archive_filename} ${dir_path}/*
+if [[ -z "$output" ]]; then
+    output="${files[-1]}"
+    files=("${files[@]:0:${#files[@]}-1}")
+fi
 
-# encrypt archived file
-gpg --output ${archive_filename}.gpg --symmetric $archive_filename
-
-# remove temporary compressed directory
-rm ${archive_filename}
+# *do not* compress given directory to a custom named archive
+# SEE: https://crypto.stackexchange.com/questions/29972/is-there-an-existing-cryptography-algorithm-method-that-both-encrypts-and-comp/29974#29974
+tar -cvf - --exclude="$output.gpg" -- "${files[@]}" \
+| gpg2 --symmetric --output "$output".gpg -- -
