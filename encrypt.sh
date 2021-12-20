@@ -37,8 +37,6 @@ elif (( ${#files[@]} == 0 )); then
     files=(.)
 fi
 
-printf '%s\n' "${files[@]}"
-
 if [[ -z "$output" ]]; then
     output="${files[-1]}"
     files=("${files[@]:0:${#files[@]}-1}")
