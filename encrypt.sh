@@ -11,10 +11,10 @@ if [ -z ${2+x} ]; then archive="archive"; else archive=$2; fi
 
 # compress given directory to a custom named archive
 archive_filename=${archive}-$(date +"%Y-%m-%d").tar.gz
-tar -zcvf ${archive_filename} ${dir_path}/*
+tar -zcvf "${archive_filename}" "${dir_path}"/*
 
 # encrypt archived file
-gpg --output ${archive_filename}.gpg --symmetric $archive_filename
+gpg --output "${archive_filename}".gpg --symmetric "$archive_filename"
 
 # remove temporary compressed directory
-rm ${archive_filename}
+rm "${archive_filename}"
